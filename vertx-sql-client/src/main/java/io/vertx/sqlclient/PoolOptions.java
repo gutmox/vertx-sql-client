@@ -38,8 +38,14 @@ public class PoolOptions {
    */
   public static final int DEFAULT_MAX_WAIT_QUEUE_SIZE = -1;
 
+  /**
+   * Default connection timeout in the pool = -1 (no timeout)
+   */
+  public static final int DEFAULT_TIMEOUT = -1;
+
   private int maxSize = DEFAULT_MAX_SIZE;
   private int maxWaitQueueSize = DEFAULT_MAX_WAIT_QUEUE_SIZE;
+  private int timeOut = DEFAULT_TIMEOUT;
 
   public PoolOptions() {
   }
@@ -91,6 +97,21 @@ public class PoolOptions {
   public PoolOptions setMaxWaitQueueSize(int maxWaitQueueSize) {
     this.maxWaitQueueSize = maxWaitQueueSize;
     return this;
+  }
+
+  /**
+   * @return the pool connection timeout
+   */
+  public int getTimeOut() {
+    return timeOut;
+  }
+
+  /**
+   * Establish a timeout for connections in the pool in milliseconds
+   * @param timeOut
+   */
+  public void setTimeOut(int timeOut) {
+    this.timeOut = timeOut;
   }
 
   public JsonObject toJson() {

@@ -35,9 +35,9 @@ import java.util.Set;
 
 /**
  * Todo :
- *
- * - handle timeout when acquiring a connection
- * - for per statement pooling, have several physical connection and use the less busy one to avoid head of line blocking effect
+ * <p>
+ * - handle timeout when acquiring a connection - for per statement pooling, have several physical connection and use
+ * the less busy one to avoid head of line blocking effect
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
@@ -49,6 +49,7 @@ public class ConnectionPool {
   private final ArrayDeque<Handler<AsyncResult<Connection>>> waiters = new ArrayDeque<>();
   private final Set<PooledConnection> all = new HashSet<>();
   private final ArrayDeque<PooledConnection> available = new ArrayDeque<>();
+  private final int timeOut;
   private int size;
   private final int maxWaitQueueSize;
   private boolean checkInProgress;
@@ -63,6 +64,10 @@ public class ConnectionPool {
   }
 
   public ConnectionPool(ConnectionFactory connector, Context context, int maxSize, int maxWaitQueueSize) {
+    this(connector, context, maxSize, maxWaitQueueSize, PoolOptions.DEFAULT_TIMEOUT);
+  }
+
+  public ConnectionPool(ConnectionFactory connector, Context context, int maxSize, int maxWaitQueueSize, int timeOut) {
     Objects.requireNonNull(connector, "No null connector");
     if (maxSize < 1) {
       throw new IllegalArgumentException("Pool max size must be > 0");
@@ -71,6 +76,7 @@ public class ConnectionPool {
     this.context = (ContextInternal) context;
     this.maxWaitQueueSize = maxWaitQueueSize;
     this.connector = connector;
+    this.timeOut = timeOut;
   }
 
   public int available() {
@@ -134,13 +140,15 @@ public class ConnectionPool {
       .onComplete(promise);
   }
 
-  private class PooledConnection implements Connection, Connection.Holder  {
+  private class PooledConnection implements Connection, Connection.Holder {
 
     private final Connection conn;
     private Holder holder;
+    private final long creationTimestamp;
 
     PooledConnection(Connection conn) {
       this.conn = conn;
+      creationTimestamp = System.currentTimeMillis();
     }
 
     @Override
@@ -151,6 +159,10 @@ public class ConnectionPool {
     @Override
     public DatabaseMetadata getDatabaseMetaData() {
       return conn.getDatabaseMetaData();
+    }
+
+    public long getCreationTimestamp() {
+      return creationTimestamp;
     }
 
     @Override
